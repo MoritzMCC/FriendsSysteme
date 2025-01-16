@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 public class FriendCommand implements CommandExecutor {
     @Override
@@ -23,12 +24,21 @@ public class FriendCommand implements CommandExecutor {
         }
         Player player = (Player) commandSender;
         if(strings.length == 0){
-            //open friend inventory
+            player.sendMessage("/friend list");
+            player.sendMessage("/friend add [player name]");
+            player.sendMessage("/friend remove [player name]");
             return false;
         }
         if(strings[0].equalsIgnoreCase("list")){
             player.sendMessage(ChatColor.GOLD + "Friends:");
-            List<Player> friends = SQLManager.getFriendsAsPlayer(player);
+            List<Player> friends = null;
+            try {
+                friends = SQLManager.getFriendsAsPlayerAsync(player).get();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
             if(friends.isEmpty()){
                 player.sendMessage(ChatColor.AQUA + "You have no friends yet, invite some with /friend add [name]");
                 return false;

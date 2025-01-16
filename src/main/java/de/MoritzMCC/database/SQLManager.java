@@ -6,119 +6,118 @@ import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class SQLManager {
 
-    public static void addFriend(Player player, String friendName){
-        if(sqlInjectionCheckFailed(friendName))return;
-        UUID uuid = player.getUniqueId();
-        UUID targetId = Bukkit.getPlayer(friendName) != null ?
-                Bukkit.getPlayer(friendName).getUniqueId() :
-                Bukkit.getOfflinePlayer(friendName).getUniqueId();
-        List<String> friends = getFriendList(player);
-        if (friends.contains(targetId.toString())) {
-            player.sendMessage(ChatColor.RED + "You are already friends with this player.");
-            return;
-        }
-        friends.add(targetId.toString());
-        String friendListString = String.join(", ", friends);
-        Main.getMySQLHandler().executeQuery("UPDATE players SET friends = '" + friendListString + "' WHERE uuid = '" + uuid + "';");
-        player.sendMessage(ChatColor.GREEN + "You are now friends with " + friendName + "!");
-    }
-    public static void removeFriend(Player player, String friendName){
-        UUID uuid = player.getUniqueId();
-        UUID targetId = Bukkit.getPlayer(friendName) != null ?
-                Bukkit.getPlayer(friendName).getUniqueId() :
-                Bukkit.getOfflinePlayer(friendName).getUniqueId();
-        List<String> friends = getFriendList(player);
-        if (friends.isEmpty()){
-            player.sendMessage(ChatColor.AQUA + "You have no friends yet, invite some with /friend add [name]");
-            return;
-        }
-        if(!friends.contains(targetId.toString())){
-            player.sendMessage(ChatColor.RED + "You are not friends with this player");
-            return;
-        }
-        friends.remove(targetId.toString());
-        String friendListString = String.join(", ", friends);
-        Main.getMySQLHandler().executeQuery("UPDATE players SET friends = '" + friendListString + "' WHERE uuid = '" + uuid + "';");
-        player.sendMessage(ChatColor.GREEN + "You are no longer friends with " + friendName + ".");
-    }
-
-    public static List<String> getFriendList(Player player) {
-        String friendsString = Main.getMySQLHandler().getRow("SELECT friends FROM players WHERE uuid = '" + player.getUniqueId() + "' LIMIT 1;").get("friends").toString();
-        if (friendsString.isEmpty()) {
-            return Arrays.asList();
-        }
-        return Arrays.stream(friendsString.split(", ")).collect(Collectors.toList());
-    }
-
-    public static List<Player> getFriendsAsPlayer(Player mainPlayer ) {
-        List<Player> playerList = new ArrayList<>();
-        playerList.addAll(getOnlineFriendsAsPlayer(mainPlayer));
-        playerList.addAll(getOfflineFriendsAsPlayer(mainPlayer));
-        return playerList;
-    }
-
-    public static List<Player> getOnlineFriendsAsPlayer(Player mainPlayer) {
-        List<Player> playerList = new ArrayList<>();
-        for (String friend : getFriendList(mainPlayer)) {
-            UUID friendUUID = UUID.fromString(friend);
-            Player onlinePlayer = Bukkit.getPlayer(friendUUID);
-            if (onlinePlayer != null && onlinePlayer.isOnline()) {
-                playerList.add(onlinePlayer);
+    public static void addFriend(Player player, String friendName) {
+        CompletableFuture.runAsync(() -> {
+            if (sqlInjectionCheckFailedAsync(friendName)) {
+                player.sendMessage(ChatColor.RED + "Ungültiger Name. Ein Admin wurde benachrichtigt.");
+                return;
             }
-        }
-        return playerList;
+
+            UUID uuid = player.getUniqueId();
+            UUID targetId = getPlayerUUID(friendName);
+
+            // Freunde aus der Datenbank laden
+            List<String> friends = getFriendListAsync(player).join();
+
+            if (friends.contains(targetId.toString())) {
+                player.sendMessage(ChatColor.RED + "Du bist bereits mit diesem Spieler befreundet.");
+                return;
+            }
+
+            friends.add(targetId.toString());
+            String friendListString = String.join(", ", friends);
+
+            Main.getMySQLHandler().executeQueryAsync("UPDATE players SET friends = '" + friendListString + "' WHERE uuid = '" + uuid + "';").join();
+            player.sendMessage(ChatColor.GREEN + "Du bist jetzt mit " + friendName + " befreundet!");
+        });
     }
 
-    public static List<Player> getOfflineFriendsAsPlayer(Player mainPlayer) {
-        List<Player> playerList = new ArrayList<>();
-        for (String friend : getFriendList(mainPlayer)) {
-            UUID friendUUID = UUID.fromString(friend);
-            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(friendUUID);
-            if (offlinePlayer.hasPlayedBefore()) {
-                Player player = offlinePlayer.getPlayer();
+    public static void removeFriend(Player player, String friendName) {
+        CompletableFuture.runAsync(() -> {
+            UUID uuid = player.getUniqueId();
+            UUID targetId = getPlayerUUID(friendName);
+
+            List<String> friends = getFriendListAsync(player).join();
+
+            if (friends.isEmpty()) {
+                player.sendMessage(ChatColor.AQUA + "Du hast noch keine Freunde. Füge mit /friend add [name] einen hinzu.");
+                return;
+            }
+
+            if (!friends.contains(targetId.toString())) {
+                player.sendMessage(ChatColor.RED + "Du bist nicht mit diesem Spieler befreundet.");
+                return;
+            }
+
+            friends.remove(targetId.toString());
+            String friendListString = String.join(", ", friends);
+
+            Main.getMySQLHandler().executeQueryAsync("UPDATE players SET friends = '" + friendListString + "' WHERE uuid = '" + uuid + "';").join();
+            player.sendMessage(ChatColor.GREEN + "Du bist jetzt nicht mehr mit " + friendName + " befreundet.");
+        });
+    }
+
+    public static CompletableFuture<List<String>> getFriendListAsync(Player player) {
+        return CompletableFuture.supplyAsync(() -> {
+            String friendsString = Main.getMySQLHandler().getRowAsync("SELECT friends FROM players WHERE uuid = '" + player.getUniqueId() + "' LIMIT 1;")
+                    .join()
+                    .get("friends")
+                    .toString();
+
+            if (friendsString.isEmpty()) {
+                return new ArrayList<>();
+            }
+
+            return Arrays.stream(friendsString.split(", "))
+                    .collect(Collectors.toList());
+        });
+    }
+
+    public static CompletableFuture<List<Player>> getFriendsAsPlayerAsync(Player mainPlayer) {
+        return getFriendListAsync(mainPlayer).thenApplyAsync(friends -> {
+            List<Player> playerList = new ArrayList<>();
+            for (String friend : friends) {
+                UUID friendUUID = UUID.fromString(friend);
+                Player player = Bukkit.getPlayer(friendUUID);
                 if (player != null) {
                     playerList.add(player);
                 }
             }
-        }
-        return playerList;
+            return playerList;
+        });
     }
 
-    private static Boolean sqlInjectionCheckFailed(String string) {
+    private static Boolean sqlInjectionCheckFailedAsync(String input) {
+
         for (String pattern : DANGEROUS_PATTERNS) {
-            if (string.contains(pattern)) {
-                //Hier ban bis Mod drüber sehen kann
+            if (input.contains(pattern)) {
                 return true;
             }
         }
         return false;
+
     }
+
+    private static UUID getPlayerUUID(String playerName) {
+        Player onlinePlayer = Bukkit.getPlayer(playerName);
+        if (onlinePlayer != null) {
+            return onlinePlayer.getUniqueId();
+        }
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerName);
+        return offlinePlayer.getUniqueId();
+    }
+
     private static final String[] DANGEROUS_PATTERNS = {
-            "'",         // Einfaches Anführungszeichen
-            "\"",        // Doppeltes Anführungszeichen
-            ";",         // Semikolon
-            "--",        // SQL-Kommentar
-            "#",         // MySQL-Kommentar
-            "\\*",       // Stern (für Mehrzeilige Kommentare)
-            "\\/",       // Slash (für Mehrzeilige Kommentare)
-            "UNION",     // UNION Injection
-            "SELECT",    // SELECT Statement
-            "INSERT",    // INSERT Statement
-            "UPDATE",    // UPDATE Statement
-            "DELETE",    // DELETE Statement
-            "DROP",      // DROP Statement
-            "AND",       // AND-Bedingung
-            "OR",        // OR-Bedingung
-            "=",         // Gleichheitszeichen
-            "\\(",       // Öffnende Klammer
-            "\\)"        // Schließende Klammer
+            "'", "\"", ";", "--", "#", "\\*", "\\/", "UNION", "SELECT", "INSERT",
+            "UPDATE", "DELETE", "DROP", "AND", "OR", "=", "\\(", "\\)"
     };
+
+
 }
+
