@@ -5,6 +5,7 @@ import de.MoritzMCC.friendrequests.FriendrequestHandler;
 import de.MoritzMCC.friendsSysteme.Main;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -31,15 +32,9 @@ public class FriendCommand implements CommandExecutor {
         }
         if(strings[0].equalsIgnoreCase("list")){
             player.sendMessage(ChatColor.GOLD + "Friends:");
-            List<Player> friends = null;
-            try {
-                friends = SQLManager.getFriendsAsPlayerAsync(player).get();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            } catch (ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-            if(friends.isEmpty()){
+            List<Player> friends = SQLManager.getAllFriendsAsPlayerAsync(player.getUniqueId());
+
+            if(friends.isEmpty() || friends == null){
                 player.sendMessage(ChatColor.AQUA + "You have no friends yet, invite some with /friend add [name]");
                 return false;
             }
@@ -54,11 +49,10 @@ public class FriendCommand implements CommandExecutor {
                 player.sendMessage(ChatColor.RED + "You must specify a player name!");
                 return false;
             }
-            Player target = Bukkit.getPlayer(strings[1]) != null ?
-                    Bukkit.getPlayer(strings[1]) :
-                    Bukkit.getOfflinePlayer(strings[1]).getPlayer();
 
-            FriendrequestHandler.createFriendRequest(player, target);
+            OfflinePlayer offlinePlayer = Main.getInstance().getServer().getOfflinePlayer(strings[1]);
+            FriendrequestHandler.createFriendRequest(player.getUniqueId(), offlinePlayer.getUniqueId());
+            player.sendMessage(ChatColor.DARK_GREEN + "You invited " + strings[1] + " to be your friend!");
 
             return false;
 
@@ -68,7 +62,7 @@ public class FriendCommand implements CommandExecutor {
                 player.sendMessage(ChatColor.RED + "You must specify a player name!");
                 return false;
             }
-           SQLManager.removeFriend(player , strings[1]);
+           SQLManager.removeFriend(player.getUniqueId() , strings[1]);
         }
         return false;
     }

@@ -1,12 +1,17 @@
 package de.MoritzMCC.database;
 
 import com.google.gson.Gson;
+import de.MoritzMCC.friendsSysteme.Main;
+import org.bukkit.ChatColor;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class MySQLHandler {
     private Connection connection;
@@ -14,14 +19,25 @@ public class MySQLHandler {
 
     public MySQLHandler(Connection connection) {
         this.connection = connection;
+        String query = "CREATE TABLE IF NOT EXISTS players ( "
+                + "id INT(11) AUTO_INCREMENT PRIMARY KEY, "
+                + "uuid VARCHAR(36) NOT NULL, " +
+                "friends TEXT NOT NULL);";
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(query);
+            Main.getInstance().getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "Friends " + ChatColor.GREEN + "Default MySQL Table was successfully created with all columns.");
+        } catch (SQLException e) {
+            Main.getInstance().getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "Friends " + ChatColor.RED + "Failed to create the default MySQL Table.");
+            Main.getInstance().getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "Friends " + ChatColor.BLUE + "SQLException: " + ChatColor.WHITE + e.getMessage());
+        }
     }
-
     public void executeQuery(String query, Object... params) {
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             setParameters(stmt, params);
             stmt.executeUpdate();
+            Main.getInstance().getLogger().info("Successfully executed query: " + query);
         } catch (SQLException e) {
-            e.printStackTrace();
+            Main.getInstance().getLogger().warning("Error executing query: " + query);
         }
     }
 

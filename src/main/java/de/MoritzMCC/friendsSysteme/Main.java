@@ -20,7 +20,7 @@ public final class Main extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
-        mysqlHandler = new MySQLHandler(connectToDatabase("localhost", 3306, "friendsSystem", "root", "asdf"));
+        mysqlHandler = new MySQLHandler(connectToDatabase("localhost", 3306, "dojo", "dojo", "dojo"));
 
         /* -- onEnable message -- */
         this.getLogger().info("§5FriendsSystem §7has been §aENABLED§7!");
@@ -28,6 +28,7 @@ public final class Main extends JavaPlugin {
         /* -- register commands -- */
         registerCommand("friend", new FriendCommand());
         registerCommand("friendrequest", new FriendRequestCommand());
+
 
         /* -- register listener -- */
         registerListener(new JoinListener());
@@ -45,6 +46,7 @@ public final class Main extends JavaPlugin {
     public void onDisable() {
         /* -- onDisable message -- */
         this.getLogger().info("§5FriendsSystem §7has been §cDISABLED§7!");
+        mysqlHandler.close();
     }
 
     private Connection connectToDatabase(String host, int port, String database, String user, String password) {
@@ -52,6 +54,7 @@ public final class Main extends JavaPlugin {
             String url = "jdbc:mysql://" + host + ":" + port + "/" + database;
             return DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {
+            getLogger().severe("Could not connect to database!");
             e.printStackTrace();
             return null;
         }
