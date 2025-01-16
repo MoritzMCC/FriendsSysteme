@@ -1,6 +1,7 @@
 package de.MoritzMCC.listeners;
 
 import de.MoritzMCC.database.SQLManager;
+import de.MoritzMCC.friendrequests.FriendrequestHandler;
 import de.MoritzMCC.friendsSysteme.Main;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -8,10 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class JoinListener implements Listener {
 
@@ -25,6 +23,10 @@ public class JoinListener implements Listener {
         }
         for(Player friend : friends) {
            friend.sendMessage(ChatColor.AQUA + "Your friend"+ player.getName() +"is online now");
+        }
+        if(FriendrequestHandler.getOpenRequests().containsValue(player)){
+
+            FriendrequestHandler.sendFriendRequest(Objects.requireNonNull(FriendrequestHandler.getPlayerWhoSendRequest(player)), player);
         }
     }
 }

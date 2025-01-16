@@ -15,8 +15,11 @@ import java.util.stream.Collectors;
 public class SQLManager {
 
     public static void addFriend(Player player, String friendName){
+        if(sqlInjectionCheckFailed(friendName))return;
         UUID uuid = player.getUniqueId();
-        player.getUniqueId(); UUID targetId = Bukkit.getPlayer(friendName) != null ? Bukkit.getPlayer(friendName).getUniqueId() : Bukkit.getOfflinePlayer(friendName).getUniqueId();
+        UUID targetId = Bukkit.getPlayer(friendName) != null ?
+                Bukkit.getPlayer(friendName).getUniqueId() :
+                Bukkit.getOfflinePlayer(friendName).getUniqueId();
         List<String> friends = getFriendList(player);
         if (friends.contains(targetId.toString())) {
             player.sendMessage(ChatColor.RED + "You are already friends with this player.");
@@ -29,7 +32,9 @@ public class SQLManager {
     }
     public static void removeFriend(Player player, String friendName){
         UUID uuid = player.getUniqueId();
-        UUID targetId = Bukkit.getPlayer(friendName) != null ? Bukkit.getPlayer(friendName).getUniqueId() : Bukkit.getOfflinePlayer(friendName).getUniqueId();
+        UUID targetId = Bukkit.getPlayer(friendName) != null ?
+                Bukkit.getPlayer(friendName).getUniqueId() :
+                Bukkit.getOfflinePlayer(friendName).getUniqueId();
         List<String> friends = getFriendList(player);
         if (friends.isEmpty()){
             player.sendMessage(ChatColor.AQUA + "You have no friends yet, invite some with /friend add [name]");
@@ -79,10 +84,41 @@ public class SQLManager {
             OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(friendUUID);
             if (offlinePlayer.hasPlayedBefore()) {
                 Player player = offlinePlayer.getPlayer();
-                if (player != null) { playerList.add(player);
+                if (player != null) {
+                    playerList.add(player);
                 }
             }
         }
         return playerList;
     }
+
+    private static Boolean sqlInjectionCheckFailed(String string) {
+        for (String pattern : DANGEROUS_PATTERNS) {
+            if (string.contains(pattern)) {
+                //Hier ban bis Mod drüber sehen kann
+                return true;
+            }
+        }
+        return false;
+    }
+    private static final String[] DANGEROUS_PATTERNS = {
+            "'",         // Einfaches Anführungszeichen
+            "\"",        // Doppeltes Anführungszeichen
+            ";",         // Semikolon
+            "--",        // SQL-Kommentar
+            "#",         // MySQL-Kommentar
+            "\\*",       // Stern (für Mehrzeilige Kommentare)
+            "\\/",       // Slash (für Mehrzeilige Kommentare)
+            "UNION",     // UNION Injection
+            "SELECT",    // SELECT Statement
+            "INSERT",    // INSERT Statement
+            "UPDATE",    // UPDATE Statement
+            "DELETE",    // DELETE Statement
+            "DROP",      // DROP Statement
+            "AND",       // AND-Bedingung
+            "OR",        // OR-Bedingung
+            "=",         // Gleichheitszeichen
+            "\\(",       // Öffnende Klammer
+            "\\)"        // Schließende Klammer
+    };
 }

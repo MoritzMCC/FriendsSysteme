@@ -1,6 +1,7 @@
 package de.MoritzMCC.commands;
 
 import de.MoritzMCC.database.SQLManager;
+import de.MoritzMCC.friendrequests.FriendrequestHandler;
 import de.MoritzMCC.friendsSysteme.Main;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -43,6 +44,11 @@ public class FriendCommand implements CommandExecutor {
                 player.sendMessage(ChatColor.RED + "You must specify a player name!");
                 return false;
             }
+            Player target = Bukkit.getPlayer(strings[1]) != null ?
+                    Bukkit.getPlayer(strings[1]) :
+                    Bukkit.getOfflinePlayer(strings[1]).getPlayer();
+
+            FriendrequestHandler.createFriendRequest(player, target);
 
             return false;
 

@@ -1,5 +1,6 @@
 package de.MoritzMCC.friendsSysteme;
 
+import de.MoritzMCC.commands.FriendRequestCommand;
 import de.MoritzMCC.commands.FriendCommand;
 import de.MoritzMCC.database.MySQLHandler;
 import de.MoritzMCC.listeners.JoinListener;
@@ -26,6 +27,7 @@ public final class Main extends JavaPlugin {
 
         /* -- register commands -- */
         registerCommand("friend", new FriendCommand());
+        registerCommand("friendrequest", new FriendRequestCommand());
 
         /* -- register listener -- */
         registerListener(new JoinListener());
