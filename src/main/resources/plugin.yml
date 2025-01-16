@@ -1,0 +1,6 @@
+name: FirendsSysteme
+version: '1.0-SNAPSHOT'
+main: de.MoritzMCC.friendsSysteme.Main
+api-version: '1.8'
+commands:
+  friend:
