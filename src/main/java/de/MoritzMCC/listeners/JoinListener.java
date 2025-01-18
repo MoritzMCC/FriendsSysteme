@@ -12,10 +12,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 public class JoinListener implements Listener {
-    SQLManager sqlManager = new SQLManager();
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
@@ -32,7 +33,9 @@ public class JoinListener implements Listener {
         List<UUID> friendListUuids = new ArrayList<>();
 
         SQLManager.getAllFriendsAsPlayerAsync(player.getUniqueId()).forEach(player1 -> {
-            friendListUuids.add(player1.getUniqueId());
+            if (player1 != null) {
+                friendListUuids.add(player1.getUniqueId());
+            }
         });
 
         if (friendListUuids.isEmpty()) {
@@ -45,16 +48,14 @@ public class JoinListener implements Listener {
                     friendPlayer.sendMessage(ChatColor.DARK_GRAY + "Your friend " + player.getName() + " is now online");
                 }
             });
-
         }
 
         if (FriendrequestHandler.getOpenRequests().containsValue(uuid)) {
             OfflinePlayer requester = FriendrequestHandler.getPlayerWhoSendRequest(uuid);
-            player.sendMessage("olla");
             if (requester != null) {
+                player.sendMessage(ChatColor.AQUA + requester.getName() + " has sent you a friend request.");
                 FriendrequestHandler.sendFriendRequest(requester.getUniqueId(), uuid);
             }
         }
-
     }
 }

@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public class FriendrequestHandler {
 
@@ -20,13 +21,14 @@ public class FriendrequestHandler {
     public static void removeOpenRequest(UUID playerUUID, UUID requestedFriendUUID) {
         String request = playerUUID.toString() + "." + requestedFriendUUID.toString();
         openRequests.remove(request);
-        Bukkit.getPlayer(playerUUID).sendMessage(Bukkit.getOfflinePlayer(requestedFriendUUID).getName());
     }
 
-    public static void acceptFriendRequest(UUID playerId, UUID requestedFriendUUID) {
-        removeOpenRequest(playerId, requestedFriendUUID);
-        SQLManager.addFriend(playerId, requestedFriendUUID.toString());
-        SQLManager.addFriend(requestedFriendUUID, playerId.toString());
+    public static void acceptFriendRequest(UUID playerUUId, UUID requestedFriendUUID) {
+        removeOpenRequest(playerUUId, requestedFriendUUID);
+        CompletableFuture.runAsync(() -> {
+            SQLManager.addFriend(playerUUId, requestedFriendUUID.toString());
+            SQLManager.addFriend(requestedFriendUUID, playerUUId.toString());
+        });
     }
 
     public static void sendFriendRequest(UUID playerUUID, UUID requestedFriendUUID) {
@@ -74,24 +76,24 @@ public class FriendrequestHandler {
         return null;
     }
 
-    public static void acceptAllFriendRequest(UUID playerUUID) {
-
-       List<UUID> openRequestList = openRequests.values().stream().toList();
-
-       openRequestList.forEach(openRequest -> {
-           if (openRequest.equals(playerUUID)) {
-               acceptFriendRequest(playerUUID, getPlayerWhoSendRequest(playerUUID).getUniqueId());
-           }
-       });
-    }
-
-    public static void declineAllFriendRequest(UUID playerUUID) {
-        List<UUID> openRequestList = openRequests.values().stream().toList();
-
-        openRequestList.forEach(openRequest -> {
-            if (openRequest.equals(playerUUID)) {
-                removeOpenRequest(playerUUID, getPlayerWhoSendRequest(playerUUID).getUniqueId());
+    public static void acceptAllFriendRequests(UUID playerUUID) {
+        openRequests.entrySet().removeIf(entry -> {
+            String[] s = entry.getKey().split("\\.");
+            if (Objects.equals(s[1], playerUUID.toString())) {
+                acceptFriendRequest(playerUUID, UUID.fromString(s[0]));
+                return true;
             }
+            return false;
+        });
+    }
+    public static void declineAllFriendRequests(UUID playerUUID) {
+        openRequests.entrySet().removeIf(entry -> {
+            String[] s = entry.getKey().split("\\.");
+            if (Objects.equals(s[1], playerUUID.toString())) {
+                removeOpenRequest(playerUUID, UUID.fromString(s[0]));
+                return true;
+            }
+            return false;
         });
     }
 }

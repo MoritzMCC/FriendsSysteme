@@ -14,69 +14,76 @@ import java.util.UUID;
 
 public class FriendRequestCommand implements CommandExecutor {
     @Override
-    public boolean onCommand(CommandSender commandSender, Command command, String s, String[] strings) {
+    public boolean onCommand(CommandSender commandSender, Command command, String label, String[] args) {
         if (!(commandSender instanceof Player)) {
             commandSender.sendMessage("You must be a player to use this command!");
             return false;
         }
 
         Player player = (Player) commandSender;
-        if (strings.length != 2) {
+        UUID senderUUID = player.getUniqueId();
+
+        if (args.length != 2) {
             player.sendMessage("You must specify a friend request to accept or decline!");
             return false;
         }
 
-        String targetPlayerName = strings[1];
-        UUID senderUUID = player.getUniqueId();
-        Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+        String action = args[0];
+        String targetPlayerName = args[1];
+        UUID targetUUID = null;
 
-        if (targetPlayer == null){
-            targetPlayer = Main.getInstance().getServer().getOfflinePlayer(targetPlayerName).getPlayer();
+        if (!targetPlayerName.equalsIgnoreCase("all")) {
+            Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+            if (targetPlayer != null) {
+                targetUUID = targetPlayer.getUniqueId();
+            } else {
+                OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(targetPlayerName);
+                if (offlinePlayer != null && offlinePlayer.hasPlayedBefore()) {
+                    targetUUID = offlinePlayer.getUniqueId();
+                }
+            }
+
+            if (targetUUID == null) {
+                player.sendMessage("The specified player has never joined the server or is not online.");
+                return false;
+            }
+
+            if (!FriendrequestHandler.getOpenRequests().containsValue(senderUUID)) {
+                player.sendMessage("You have no open requests!");
+                return false;
+            }
+
+            String request = targetUUID + "." + senderUUID;
+
+            if (!FriendrequestHandler.getOpenRequests().containsKey(request)) {
+                player.sendMessage("You have no open requests by that player!");
+                return false;
+            }
         }
 
-        if (targetPlayer == null) {
-            player.sendMessage("The specified player has never joined the server.");
-            return false;
-        }
-
-        UUID targetUUID = targetPlayer.getUniqueId();
-        if (targetUUID == null) {
-            player.sendMessage("The specified player is not online.");
-            return false;
-        }
-
-        if (!FriendrequestHandler.getOpenRequests().containsValue(senderUUID)) {
-            player.sendMessage("You have no open requests!");
-            return false;
-        }
-
-        String request = targetUUID + "." + senderUUID;
-
-        if (!FriendrequestHandler.getOpenRequests().containsKey(request)) {
-            player.sendMessage("You have no open requests by that player!");
-            return false;
-        }
-
-        if (strings[0].equalsIgnoreCase("accept")) {
-            if (strings[1] == "all"){
-                FriendrequestHandler.acceptAllFriendRequest(senderUUID);
+        if (action.equalsIgnoreCase("accept")) {
+            if (targetPlayerName.equalsIgnoreCase("all")) {
+                FriendrequestHandler.acceptAllFriendRequests(senderUUID);
+                player.sendMessage("You have accepted all friend requests.");
                 return true;
             }
-
             FriendrequestHandler.acceptFriendRequest(senderUUID, targetUUID);
+            player.sendMessage("You have accepted the friend request from " + targetPlayerName);
             return true;
         }
 
-        if (strings[0].equalsIgnoreCase("decline")) {
-            if (strings[1] == "all"){
-               FriendrequestHandler.declineAllFriendRequest(senderUUID);
+        if (action.equalsIgnoreCase("decline")) {
+            if (targetPlayerName.equalsIgnoreCase("all")) {
+                FriendrequestHandler.declineAllFriendRequests(senderUUID);
+                player.sendMessage("You have declined all friend requests.");
+                return true;
             }
-
             FriendrequestHandler.removeOpenRequest(senderUUID, targetUUID);
+            player.sendMessage("You have declined the friend request from " + targetPlayerName);
             return true;
         }
 
-        player.sendMessage("You have to use this command: /friendrequest [playername] [accept|decline]");
+        player.sendMessage("You have to use this command: /friendrequest [accept|decline] [playername|all]");
         return false;
     }
 }
