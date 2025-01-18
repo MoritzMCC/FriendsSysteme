@@ -1,5 +1,6 @@
 package de.MoritzMCC.listeners;
 
+import de.MoritzMCC.database.MySQLHandler;
 import de.MoritzMCC.database.SQLManager;
 import de.MoritzMCC.friendrequests.FriendrequestHandler;
 import de.MoritzMCC.friendsSysteme.Main;
@@ -19,30 +20,41 @@ public class JoinListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        List<UUID> friendListUuids = sqlManager.getFriendListOfUuid(player.getUniqueId());
+        UUID uuid = player.getUniqueId();
+        MySQLHandler mySQLHandler = Main.getMySQLHandler();
 
-        if (friendListUuids == null) {
-            player.sendMessage(ChatColor.AQUA + "You have no friends yet, invite some with /friend add [name]");
+        if (!mySQLHandler.isUUIDPresentAsync(uuid).join()) { // First join
+            mySQLHandler.insertPlayerAsync(uuid);
+            player.sendMessage(ChatColor.GREEN + "You have joined the server!");
             return;
         }
 
-        List<OfflinePlayer> friendList = new ArrayList<>();
-        friendListUuids.forEach((uuid) -> {
-            friendList.add(Main.getInstance().getServer().getOfflinePlayer(uuid));
+        List<UUID> friendListUuids = new ArrayList<>();
+
+        SQLManager.getAllFriendsAsPlayerAsync(player.getUniqueId()).forEach(player1 -> {
+            friendListUuids.add(player1.getUniqueId());
         });
 
-        friendListUuids.forEach((uuid) -> {
-            Player friendPlayer = Bukkit.getPlayer(uuid);
-            if (friendPlayer != null && friendPlayer.isOnline()) {
-                player.sendMessage(ChatColor.AQUA + "Your friend " + friendPlayer.getName() + " is online now");
-            }
-        });
+        if (friendListUuids.isEmpty()) {
+            player.sendMessage(ChatColor.AQUA + "You have no friends yet, invite some with /friend add [name]");
+        } else {
+            friendListUuids.forEach(uuidP -> {
+                Player friendPlayer = Bukkit.getPlayer(uuidP);
+                if (friendPlayer != null && friendPlayer.isOnline()) {
+                    player.sendMessage(ChatColor.DARK_GRAY + "Your friend " + friendPlayer.getName() + " is now online");
+                    friendPlayer.sendMessage(ChatColor.DARK_GRAY + "Your friend " + player.getName() + " is now online");
+                }
+            });
 
-        if (FriendrequestHandler.getOpenRequests().containsValue(player.getUniqueId())) {
-            Player requester = FriendrequestHandler.getPlayerWhoSendRequest(player);
+        }
+
+        if (FriendrequestHandler.getOpenRequests().containsValue(uuid)) {
+            OfflinePlayer requester = FriendrequestHandler.getPlayerWhoSendRequest(uuid);
+            player.sendMessage("olla");
             if (requester != null) {
-                FriendrequestHandler.sendFriendRequest(player, requester);
+                FriendrequestHandler.sendFriendRequest(requester.getUniqueId(), uuid);
             }
         }
+
     }
 }

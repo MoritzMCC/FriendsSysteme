@@ -10,6 +10,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -117,4 +118,26 @@ public class MySQLHandler {
     public Connection getConnection() {
         return connection;
     }
+    public CompletableFuture<Void> insertPlayerAsync(UUID uuid) {
+        String query = "INSERT INTO players (uuid, friends) VALUES (?, ?)";
+        return executeQueryAsync(query, uuid.toString(), "");
+    }
+    public CompletableFuture<Boolean> isUUIDPresentAsync(UUID uuid) {
+        String query = "SELECT COUNT(*) FROM players WHERE uuid = ?";
+        return CompletableFuture.supplyAsync(() -> {
+            try (PreparedStatement stmt = connection.prepareStatement(query)) {
+                stmt.setString(1, uuid.toString());
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1) > 0;
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            return false;
+        });
+    }
+
+
 }

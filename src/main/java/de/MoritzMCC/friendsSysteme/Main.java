@@ -3,7 +3,11 @@ package de.MoritzMCC.friendsSysteme;
 import de.MoritzMCC.commands.FriendRequestCommand;
 import de.MoritzMCC.commands.FriendCommand;
 import de.MoritzMCC.database.MySQLHandler;
+import de.MoritzMCC.database.SQLManager;
+import de.MoritzMCC.friendrequests.FriendrequestHandler;
+import de.MoritzMCC.listeners.ChatListener;
 import de.MoritzMCC.listeners.JoinListener;
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
@@ -24,7 +28,6 @@ public final class Main extends JavaPlugin {
 
         /* -- onEnable message -- */
         this.getLogger().info("§5FriendsSystem §7has been §aENABLED§7!");
-
         /* -- register commands -- */
         registerCommand("friend", new FriendCommand());
         registerCommand("friendrequest", new FriendRequestCommand());
@@ -32,6 +35,7 @@ public final class Main extends JavaPlugin {
 
         /* -- register listener -- */
         registerListener(new JoinListener());
+        registerListener(new ChatListener());
     }
 
     private void registerCommand(String command, CommandExecutor executor) {
@@ -59,6 +63,7 @@ public final class Main extends JavaPlugin {
             return null;
         }
     }
+
 
     public static Plugin getInstance() {
         return instance;

@@ -3,6 +3,7 @@ package de.MoritzMCC.commands;
 import de.MoritzMCC.friendrequests.FriendrequestHandler;
 import de.MoritzMCC.friendsSysteme.Main;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -25,40 +26,53 @@ public class FriendRequestCommand implements CommandExecutor {
             return false;
         }
 
-        String targetPlayerName = strings[0];
-        OfflinePlayer offlinePlayer = Main.getInstance().getServer().getOfflinePlayer(targetPlayerName);
-        if (offlinePlayer == null) {
+        String targetPlayerName = strings[1];
+        UUID senderUUID = player.getUniqueId();
+        Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+
+        if (targetPlayer == null){
+            targetPlayer = Main.getInstance().getServer().getOfflinePlayer(targetPlayerName).getPlayer();
+        }
+
+        if (targetPlayer == null) {
             player.sendMessage("The specified player has never joined the server.");
             return false;
         }
 
-        UUID offlineID = offlinePlayer.getUniqueId();
-        if (offlineID == null) {
+        UUID targetUUID = targetPlayer.getUniqueId();
+        if (targetUUID == null) {
             player.sendMessage("The specified player is not online.");
             return false;
         }
 
-        if (!FriendrequestHandler.getOpenRequests().containsValue(player.getUniqueId())) {
+        if (!FriendrequestHandler.getOpenRequests().containsValue(senderUUID)) {
             player.sendMessage("You have no open requests!");
             return false;
         }
 
-        String request = offlineID + "." + player.getUniqueId().toString();
-        player.sendMessage(request);
+        String request = targetUUID + "." + senderUUID;
 
         if (!FriendrequestHandler.getOpenRequests().containsKey(request)) {
             player.sendMessage("You have no open requests by that player!");
-            player.sendMessage(Bukkit.getPlayer(UUID.fromString(request)).getName()); //entf
             return false;
         }
 
-        if (strings[1].equalsIgnoreCase("accept")) {
-            FriendrequestHandler.acceptFriendRequest(player.getUniqueId(),offlineID);
+        if (strings[0].equalsIgnoreCase("accept")) {
+            if (strings[1] == "all"){
+                FriendrequestHandler.acceptAllFriendRequest(senderUUID);
+                return true;
+            }
+
+            FriendrequestHandler.acceptFriendRequest(senderUUID, targetUUID);
             return true;
         }
 
-        if (strings[1].equalsIgnoreCase("decline")) {
-            FriendrequestHandler.removeOpenRequest(player.getUniqueId(), offlineID);
+        if (strings[0].equalsIgnoreCase("decline")) {
+            if (strings[1] == "all"){
+               FriendrequestHandler.declineAllFriendRequest(senderUUID);
+            }
+
+            FriendrequestHandler.removeOpenRequest(senderUUID, targetUUID);
             return true;
         }
 

@@ -44,16 +44,35 @@ public class FriendCommand implements CommandExecutor {
             player.sendMessage(ChatColor.GOLD + " ---------------");
             return false;
         }
+
+        Player targetPlayer = Bukkit.getPlayer(strings[1]);
+        UUID targetID = null;
+        if (targetPlayer != null) {
+            targetID = targetPlayer.getUniqueId();
+        } else {
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(strings[1]);
+            if (offlinePlayer != null && offlinePlayer.hasPlayedBefore()) {
+                targetID = offlinePlayer.getUniqueId();
+            }
+        }
+        if (targetID == null){
+            player.sendMessage(ChatColor.RED + "The Player you searching for has never joined this server!");
+            return false;
+        }
+
         if(strings[0].equalsIgnoreCase("add")){
             if (strings.length != 2){
                 player.sendMessage(ChatColor.RED + "You must specify a player name!");
                 return false;
             }
 
-            OfflinePlayer offlinePlayer = Main.getInstance().getServer().getOfflinePlayer(strings[1]);
-            FriendrequestHandler.createFriendRequest(player.getUniqueId(), offlinePlayer.getUniqueId());
-            player.sendMessage(ChatColor.DARK_GREEN + "You invited " + strings[1] + " to be your friend!");
+            if (SQLManager.getUUIDFriendList(player.getUniqueId()).join().contains(targetID.toString()) ){
+                player.sendMessage(ChatColor.RED + "You already have a friend with that name!");
+                return false;
+            }
 
+            FriendrequestHandler.createFriendRequest(player.getUniqueId(), targetID);
+            player.sendMessage(ChatColor.DARK_GREEN + "You invited " + strings[1] + " to be your friend!");
             return false;
 
         }
@@ -62,7 +81,8 @@ public class FriendCommand implements CommandExecutor {
                 player.sendMessage(ChatColor.RED + "You must specify a player name!");
                 return false;
             }
-           SQLManager.removeFriend(player.getUniqueId() , strings[1]);
+           SQLManager.removeFriend(player.getUniqueId() , targetID.toString());
+            SQLManager.removeFriend(targetID, player.getUniqueId().toString());
         }
         return false;
     }
