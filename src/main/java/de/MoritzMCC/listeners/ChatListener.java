@@ -17,16 +17,21 @@ public class ChatListener implements Listener {
     public void onChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         String message = event.getMessage();
+        SQLManager sqlManager = Main.getSqlManager();
 
-
-        List<String> friendsUUIDList = SQLManager.getUUIDFriendList(player.getUniqueId()).join();
+        List<String> friendsUUIDList = sqlManager.getUUIDFriendList(player.getUniqueId()).join();
         friendsUUIDList.forEach(uuid ->{
-            for(Player p : event.getRecipients()) {
-                if (p.getUniqueId().toString().equals(uuid)) {
-                    event.setFormat(ChatColor.GOLD + "[" + player.getName() + "]:" + ChatColor.RESET + message);
-                    break;
-                }
-            }
+          boolean isFriend = false;
+
+          for(Player p : event.getRecipients()){
+              if(friendsUUIDList.contains(p.getUniqueId().toString())){
+                  isFriend = true;
+                  break;
+              }
+          }
+          if(isFriend){
+              event.setFormat(ChatColor.GOLD + "["+ player.getName() +"] " + ChatColor.RESET + ": " + message);
+          }
         });
 
     }

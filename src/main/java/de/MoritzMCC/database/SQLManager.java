@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 public class SQLManager {
 
-    public static void addFriend(UUID uuid, String friendUUID) {
+    public void addFriend(UUID uuid, String friendUUID) {
         CompletableFuture.runAsync(() -> {
             OfflinePlayer offlinePlayer = getOfflinePlayerByUUID(uuid);
             Player player = offlinePlayer.getPlayer();
@@ -36,7 +36,7 @@ public class SQLManager {
         });
     }
 
-    public static void removeFriend(UUID uuid, String friendUUID) {
+    public void removeFriend(UUID uuid, String friendUUID) {
         CompletableFuture.runAsync(() -> {
             List<String> friends = getUUIDFriendList(uuid).join();
             Player player = getOfflinePlayerByUUID(uuid).getPlayer();
@@ -58,7 +58,7 @@ public class SQLManager {
         });
     }
 
-    public static CompletableFuture<List<String>> getUUIDFriendList(UUID playerUUID) {
+    public CompletableFuture<List<String>> getUUIDFriendList(UUID playerUUID) {
         return CompletableFuture.supplyAsync(() -> {
             String friendsString = (String) Main.getMySQLHandler().getRowAsync("SELECT friends FROM players WHERE uuid = ? LIMIT 1;", playerUUID.toString())
                     .join()
@@ -73,7 +73,7 @@ public class SQLManager {
         });
     }
 
-    public static CompletableFuture<List<Player>> getOnlineFriendsAsPlayerAsync(UUID playerUUID) {
+    public CompletableFuture<List<Player>> getOnlineFriendsAsPlayerAsync(UUID playerUUID) {
         return getUUIDFriendList(playerUUID).thenApplyAsync(friends -> {
             List<Player> playerList = new ArrayList<>();
             for (String friend : friends) {
@@ -87,7 +87,7 @@ public class SQLManager {
         });
     }
 
-    public static List<Player> getAllFriendsAsPlayerAsync(UUID playerUUID) {
+    public List<Player> getAllFriendsAsPlayerAsync(UUID playerUUID) {
         List<Player> playerList = new ArrayList<>();
         List<UUID> uuidList = new ArrayList<>();
         getUUIDFriendList(playerUUID).join().forEach(string -> {
@@ -105,7 +105,7 @@ public class SQLManager {
         return playerList;
     }
 
-    private static Boolean sqlInjectionCheckFailedAsync(String input) {
+    private Boolean sqlInjectionCheckFailedAsync(String input) {
         for (String pattern : DANGEROUS_PATTERNS) {
             if (input.contains(pattern)) {
                 return true;
@@ -114,7 +114,7 @@ public class SQLManager {
         return false;
     }
 
-    private static UUID getPlayerUUID(String playerName) {
+    private UUID getPlayerUUID(String playerName) {
         Player onlinePlayer = Bukkit.getPlayer(playerName);
         if (onlinePlayer != null) {
             return onlinePlayer.getUniqueId();
@@ -123,12 +123,12 @@ public class SQLManager {
         return offlinePlayer.getUniqueId();
     }
 
-    private static final String[] DANGEROUS_PATTERNS = {
+    private final String[] DANGEROUS_PATTERNS = {
             "'", "\"", ";", "--", "#", "\\*", "\\/", "UNION", "SELECT", "INSERT",
             "UPDATE", "DELETE", "DROP", "AND", "OR", "=", "\\(", "\\)"
     };
 
-    public static OfflinePlayer getOfflinePlayerByUUID(UUID uuid) {
+    public OfflinePlayer getOfflinePlayerByUUID(UUID uuid) {
         return Bukkit.getOfflinePlayer(uuid);
     }
 

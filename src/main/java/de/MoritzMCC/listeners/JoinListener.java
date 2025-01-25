@@ -23,6 +23,7 @@ public class JoinListener implements Listener {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
         MySQLHandler mySQLHandler = Main.getMySQLHandler();
+        SQLManager sqlManager = Main.getSqlManager();
 
         if (!mySQLHandler.isUUIDPresentAsync(uuid).join()) { // First join
             mySQLHandler.insertPlayerAsync(uuid);
@@ -32,7 +33,7 @@ public class JoinListener implements Listener {
 
         List<UUID> friendListUuids = new ArrayList<>();
 
-        SQLManager.getAllFriendsAsPlayerAsync(player.getUniqueId()).forEach(player1 -> {
+        sqlManager.getAllFriendsAsPlayerAsync(player.getUniqueId()).forEach(player1 -> {
             if (player1 != null) {
                 friendListUuids.add(player1.getUniqueId());
             }

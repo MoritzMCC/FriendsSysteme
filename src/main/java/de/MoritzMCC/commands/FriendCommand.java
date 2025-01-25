@@ -30,9 +30,11 @@ public class FriendCommand implements CommandExecutor {
             player.sendMessage("/friend remove [player name]");
             return false;
         }
+        SQLManager sqlManager = Main.getSqlManager();
+
         if(strings[0].equalsIgnoreCase("list")){
             player.sendMessage(ChatColor.GOLD + "Friends:");
-            List<Player> friends = SQLManager.getAllFriendsAsPlayerAsync(player.getUniqueId());
+            List<Player> friends = sqlManager.getAllFriendsAsPlayerAsync(player.getUniqueId());
 
             if(friends.isEmpty() || friends == null){
                 player.sendMessage(ChatColor.AQUA + "You have no friends yet, invite some with /friend add [name]");
@@ -66,7 +68,7 @@ public class FriendCommand implements CommandExecutor {
                 return false;
             }
 
-            if (SQLManager.getUUIDFriendList(player.getUniqueId()).join().contains(targetID.toString()) ){
+            if (sqlManager.getUUIDFriendList(player.getUniqueId()).join().contains(targetID.toString()) ){
                 player.sendMessage(ChatColor.RED + "You already have a friend with that name!");
                 return false;
             }
@@ -81,8 +83,8 @@ public class FriendCommand implements CommandExecutor {
                 player.sendMessage(ChatColor.RED + "You must specify a player name!");
                 return false;
             }
-           SQLManager.removeFriend(player.getUniqueId() , targetID.toString());
-            SQLManager.removeFriend(targetID, player.getUniqueId().toString());
+            sqlManager.removeFriend(player.getUniqueId() , targetID.toString());
+            sqlManager.removeFriend(targetID, player.getUniqueId().toString());
         }
         return false;
     }

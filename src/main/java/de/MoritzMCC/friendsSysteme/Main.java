@@ -13,27 +13,29 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
 
 public final class Main extends JavaPlugin {
     private static Plugin instance;
     private static MySQLHandler mysqlHandler;
+    private static SQLManager sqlManager;
 
     @Override
     public void onEnable() {
         instance = this;
-        mysqlHandler = new MySQLHandler(connectToDatabase("localhost", 3306, "dojo", "dojo", "dojo"));
+        mysqlHandler = new MySQLHandler(connectToDatabase());
+        sqlManager = new SQLManager();
 
-        /* -- onEnable message -- */
         this.getLogger().info("§5FriendsSystem §7has been §aENABLED§7!");
-        /* -- register commands -- */
+
         registerCommand("friend", new FriendCommand());
         registerCommand("friendrequest", new FriendRequestCommand());
 
-
-        /* -- register listener -- */
         registerListener(new JoinListener());
         registerListener(new ChatListener());
     }
@@ -48,15 +50,25 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        /* -- onDisable message -- */
         this.getLogger().info("§5FriendsSystem §7has been §cDISABLED§7!");
         mysqlHandler.close();
     }
 
-    private Connection connectToDatabase(String host, int port, String database, String user, String password) {
+    private Connection connectToDatabase() {
+        final String CONFIG_FILE = "config.properties";
+         Properties properties = new Properties();
+
+         try (FileInputStream fis = new FileInputStream(CONFIG_FILE)) {
+                properties.load(fis);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
         try {
-            String url = "jdbc:mysql://" + host + ":" + port + "/" + database;
-            return DriverManager.getConnection(url, user, password);
+            String dbUrl = properties.getProperty("db.url");
+            String user = properties.getProperty("db.user");
+            String password = properties.getProperty("db.password");
+            return DriverManager.getConnection(dbUrl, user, password);
         } catch (SQLException e) {
             getLogger().severe("Could not connect to database!");
             e.printStackTrace();
@@ -71,5 +83,9 @@ public final class Main extends JavaPlugin {
 
     public static MySQLHandler getMySQLHandler() {
         return mysqlHandler;
+    }
+
+    public static SQLManager getSqlManager() {
+        return sqlManager;
     }
 }

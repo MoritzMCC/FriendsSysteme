@@ -1,6 +1,7 @@
 package de.MoritzMCC.friendrequests;
 
 import de.MoritzMCC.database.SQLManager;
+import de.MoritzMCC.friendsSysteme.Main;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -17,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 public class FriendrequestHandler {
 
     private static final HashMap<String, UUID> openRequests = new HashMap<>(); // UUID.UUIDWho got asked and UUID who got asked
+    private static final SQLManager sqlManager = Main.getSqlManager();
 
     public static void removeOpenRequest(UUID playerUUID, UUID requestedFriendUUID) {
         String request = playerUUID.toString() + "." + requestedFriendUUID.toString();
@@ -26,8 +28,8 @@ public class FriendrequestHandler {
     public static void acceptFriendRequest(UUID playerUUId, UUID requestedFriendUUID) {
         removeOpenRequest(playerUUId, requestedFriendUUID);
         CompletableFuture.runAsync(() -> {
-            SQLManager.addFriend(playerUUId, requestedFriendUUID.toString());
-            SQLManager.addFriend(requestedFriendUUID, playerUUId.toString());
+            sqlManager.addFriend(playerUUId, requestedFriendUUID.toString());
+            sqlManager.addFriend(requestedFriendUUID, playerUUId.toString());
         });
     }
 
